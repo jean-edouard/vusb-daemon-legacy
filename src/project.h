@@ -87,6 +87,7 @@
 
 #include "policy.h"
 #include "db.h"
+#include "udev-debug.h"
 
 #define UUID_LENGTH 37 /**< Length of UUIDs, including the string terminator */
 #define DOM0_DOMID  0  /**< Dom0's domid... */

@@ -26,7 +26,6 @@
  * Functions to add/remove/lookup devices
  */
 
-
 #include "project.h"
 
 /**
@@ -156,7 +155,7 @@ device_del(int  busid,
     free(device->shortname);
     free(device->longname);
     free(device->sysname);
-    udev_device_unref(device->udev);
+    UDEV_device_unref(device->udev);
     free(device);
   } else {
     xd_log(LOG_ERR, "Device not found: %d-%d", busid, devid);

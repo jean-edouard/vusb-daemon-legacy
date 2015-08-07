@@ -44,14 +44,14 @@ udev_init(void)
   int fd;
 
   /* Initialise udev monitor */
-  udev_handle = udev_new();
+  udev_handle = UDEV_new();
   if(udev_handle == NULL)
   {
     xd_log(LOG_INFO, "Can't create udev handle");
     return -1;
   }
 
-  udev_mon = udev_monitor_new_from_netlink(udev_handle, "udev");
+  udev_mon = UDEV_monitor_new_from_netlink(udev_handle, "udev");
   udev_monitor_filter_add_match_subsystem_devtype(udev_mon, "usb", "usb_device");
   udev_monitor_enable_receiving(udev_mon);
   fd = udev_monitor_get_fd(udev_mon);
@@ -66,7 +66,7 @@ udev_settle(void)
   struct udev_queue *queue;
   unsigned int i;
 
-  queue = udev_queue_new(udev_handle);
+  queue = UDEV_queue_new(udev_handle);
   if (!queue) {
     xd_log(LOG_WARN, "udev_queue_new failed");
     /* We failed to get a queue, let's just sleep 0.1 seconds,
@@ -84,7 +84,7 @@ udev_settle(void)
     usleep(50000);
   }
 
-  udev_queue_unref(queue);
+  UDEV_queue_unref(queue);
 }
 
 static void
@@ -189,7 +189,7 @@ udev_find_more_about_optical(struct udev_device *udev_device,  device_t *device,
   }
 
   /* Create a udev monitor to wait for some "block" action for 3 seconds */
-  mon = udev_monitor_new_from_netlink(udev_handle, "udev");
+  mon = UDEV_monitor_new_from_netlink(udev_handle, "udev");
   udev_monitor_filter_add_match_subsystem_devtype(mon, "block", "disk");
   udev_monitor_enable_receiving(mon);
   fd = udev_monitor_get_fd(mon);
@@ -198,31 +198,31 @@ udev_find_more_about_optical(struct udev_device *udev_device,  device_t *device,
   tv.tv_sec = 3;
   tv.tv_usec = 0;
   select(fd + 1, &fds, NULL, NULL, &tv);
-  udev_monitor_unref(mon);
+  UDEV_monitor_unref(mon);
 
   /* The block device may just have appeared, let udev settle (again...) */
   udev_settle();
 
   /* Wether the previous triggered or timed out, check out our subnodes */
-  enumerate = udev_enumerate_new(udev_handle);
+  enumerate = UDEV_enumerate_new(udev_handle);
   udev_enumerate_add_match_parent(enumerate, udev_device);
   udev_enumerate_scan_devices(enumerate);
   udev_device_list = udev_enumerate_get_list_entry(enumerate);
   udev_list_entry_foreach(udev_device_entry, udev_device_list) {
     path = udev_list_entry_get_name(udev_device_entry);
-    udev_child = udev_device_new_from_syspath(udev_handle, path);
+    udev_child = UDEV_device_new_from_syspath(udev_handle, path);
     value = udev_device_get_property_value(udev_child, "ID_CDROM");
     if (value != NULL) {
       if (*value != '0')
         device->type |= OPTICAL;
-      udev_device_unref(udev_child);
+      UDEV_device_unref(udev_child);
       break;
     }
-    udev_device_unref(udev_child);
+    UDEV_device_unref(udev_child);
   }
 
   /* Cleanup */
-  udev_enumerate_unref(enumerate);
+  UDEV_enumerate_unref(enumerate);
 }
 
 /**
@@ -237,21 +237,21 @@ udev_find_more(struct udev_device *dev, device_t *device, int new)
   struct udev_device *udev_device;
   const char *path;
 
-  enumerate = udev_enumerate_new(udev_handle);
+  enumerate = UDEV_enumerate_new(udev_handle);
   udev_enumerate_add_match_parent(enumerate, dev);
   udev_enumerate_scan_devices(enumerate);
   udev_device_list = udev_enumerate_get_list_entry(enumerate);
   udev_list_entry_foreach(udev_device_entry, udev_device_list) {
     path = udev_list_entry_get_name(udev_device_entry);
-    udev_device = udev_device_new_from_syspath(udev_handle, path);
+    udev_device = UDEV_device_new_from_syspath(udev_handle, path);
     udev_find_more_about_input(udev_device, device);
     udev_find_more_about_class(udev_device, device);
     udev_find_more_about_optical(udev_device, device, new);
-    udev_device_unref(udev_device);
+    UDEV_device_unref(udev_device);
   }
 
   /* Cleanup */
-  udev_enumerate_unref(enumerate);
+  UDEV_enumerate_unref(enumerate);
 }
 
 /* Ignore device configurations and interfaces */
@@ -517,7 +517,7 @@ udev_fill_devices(void)
   uint16_t vendor = 0;
   uint16_t product = 0;
 
-  enumerate = udev_enumerate_new(udev_handle);
+  enumerate = UDEV_enumerate_new(udev_handle);
   udev_enumerate_add_match_subsystem(enumerate, "usb");
   /* Sysname must start with a digit */
   udev_enumerate_add_match_sysname(enumerate, "[0-9]*");
@@ -525,15 +525,15 @@ udev_fill_devices(void)
   udev_device_list = udev_enumerate_get_list_entry(enumerate);
   udev_list_entry_foreach(udev_device_entry, udev_device_list) {
     path = udev_list_entry_get_name(udev_device_entry);
-    udev_device = udev_device_new_from_syspath(udev_handle, path);
+    udev_device = UDEV_device_new_from_syspath(udev_handle, path);
     if (udev_maybe_add_device(udev_device, 0) == NULL)
-      udev_device_unref(udev_device);
+      UDEV_device_unref(udev_device);
     else
       ;/* We keep a reference to the udev device, mainly for advanced rule-matching */
   }
 
   /* Cleanup */
-  udev_enumerate_unref(enumerate);
+  UDEV_enumerate_unref(enumerate);
 }
 
 /**
@@ -548,7 +548,7 @@ udev_event(void)
   const char *action;
   device_t *device;
 
-  dev = udev_monitor_receive_device(udev_mon);
+  dev = UDEV_monitor_receive_device(udev_mon);
   if (dev) {
     action = udev_device_get_action(dev);
     xd_log(LOG_INFO, "Got Device");
@@ -573,7 +573,7 @@ udev_event(void)
         /* This seems to happen when a device is quickly plugged and
          * unplugged. */
         xd_log(LOG_INFO, "NOT ADDED");
-        udev_device_unref(dev);
+        UDEV_device_unref(dev);
       }
     }
     if (!strcmp(action, "remove")) {
@@ -581,7 +581,7 @@ udev_event(void)
         xd_log(LOG_INFO, "REMOVED");
       else
         xd_log(LOG_INFO, "NOT REMOVED");
-      udev_device_unref(dev);
+      UDEV_device_unref(dev);
     }
   }
   else {

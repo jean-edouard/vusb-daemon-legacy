@@ -98,7 +98,7 @@ get_usbinfo(int bus, int dev, usbinfo_t *ui)
   char bus_str[16], dev_str[16];
   int vendor, product;
 
-  enumerate = udev_enumerate_new(udev_handle);
+  enumerate = UDEV_enumerate_new(udev_handle);
   if (!enumerate) {
     xd_log(LOG_ERR, "Can't create enumeration");
     return -ENOMEM;
@@ -116,14 +116,14 @@ get_usbinfo(int bus, int dev, usbinfo_t *ui)
     const char *path;
 
     path = udev_list_entry_get_name(dev_list_entry);
-    udev_dev = udev_device_new_from_syspath(udev_handle, path);
+    udev_dev = UDEV_device_new_from_syspath(udev_handle, path);
     sscanf(udev_device_get_sysattr_value(udev_dev, "idVendor"), "%x", &vendor);
     sscanf(udev_device_get_sysattr_value(udev_dev, "idProduct"), "%x", &product);
-    udev_device_unref(udev_dev);
-    udev_enumerate_unref(enumerate);
+    UDEV_device_unref(udev_dev);
+    UDEV_enumerate_unref(enumerate);
     return usbowls_build_usbinfo(bus, dev, vendor, product, ui);
   }
-  udev_enumerate_unref(enumerate);
+  UDEV_enumerate_unref(enumerate);
   return -ENOENT;
 }
 
